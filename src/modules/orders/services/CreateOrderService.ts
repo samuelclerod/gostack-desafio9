@@ -45,7 +45,7 @@ class CreateOrderService {
     const existentProductsIds = existentProducts.map(product => product.id);
 
     const checkInexistentsProducts = products.filter(
-      product => !existentProductsIds.includes(product.id),
+      requiredProduct => !existentProductsIds.includes(requiredProduct.id),
     );
 
     if (checkInexistentsProducts.length) {
@@ -56,32 +56,32 @@ class CreateOrderService {
       );
     }
 
-    const productsWithNQuantityAvailable = products.filter(
-      product =>
-        existentProducts.filter(p => p.id === product.id)[0].quantity <
-        product.quantity,
+    const productsWithNoQuantityAvailable = products.filter(
+      requiredProduct =>
+        existentProducts.filter(product => product.id === requiredProduct.id)[0]
+          .quantity < requiredProduct.quantity,
     );
 
-    if (productsWithNQuantityAvailable.length) {
+    if (productsWithNoQuantityAvailable.length) {
       throw new AppError(
-        `The quantity ${productsWithNQuantityAvailable[0].quantity} is not available for ${productsWithNQuantityAvailable[0].id}`,
+        `The quantity ${productsWithNoQuantityAvailable[0].quantity} is not available for ${productsWithNoQuantityAvailable[0].id}`,
       );
     }
 
-    const normalizedProducts = products.map(product => {
+    const orderedProducts = products.map(requiredProduct => {
       const existentProduct = existentProducts.filter(
-        p => p.id === product.id,
+        product => product.id === requiredProduct.id,
       )[0];
       return {
-        product_id: product.id,
-        quantity: product.quantity,
+        product_id: requiredProduct.id,
+        quantity: requiredProduct.quantity,
         price: existentProduct.price,
       };
     });
 
     const order = await this.ordersRepository.create({
       customer,
-      products: normalizedProducts,
+      products: orderedProducts,
     });
 
     const orderedProductsQuantity = products.map(product => ({
